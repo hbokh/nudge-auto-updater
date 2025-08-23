@@ -2,7 +2,7 @@ name: Update Nudge JSON
 
 on:
   schedule:
-    - cron: '7,37 * * * *'
+    - cron: '* */6 * * *'  # 12am, 6am, 12pm, and 6pm
   workflow_dispatch:
     inputs:
       config_file:
