@@ -11,6 +11,18 @@
     },
     "osVersionRequirements": [
         {
+            "aboutUpdateURL_disabled": "https://support.apple.com/en-us/124150",
+            "aboutUpdateURLs": [
+                {
+                    "_language": "en",
+                    "aboutUpdateURL": "https://support.apple.com/en-us/124150"
+                }
+            ],
+            "requiredInstallationDate": "2025-08-12T10:00:00Z",
+            "requiredMinimumOSVersion": "14.7.7",
+            "targetedOSVersionsRule": "14"
+        },
+        {
             "aboutUpdateURL_disabled": "https://support.apple.com/en-us/124149",
             "aboutUpdateURLs": [
                 {
