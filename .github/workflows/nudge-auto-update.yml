@@ -2,7 +2,7 @@ name: Update Nudge JSON
 
 on:
   schedule:
-    - cron: '7 */2 * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
     inputs:
       config_file:
@@ -60,7 +60,7 @@ jobs:
 
       - name: Run nudge-auto-updater
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         id: update
         shell: bash
         run: |
@@ -98,10 +98,19 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "chore(deps): update ${{ env.NUDGE_FILE }} to macOS ${{ steps.version.outputs.version }}"
+          commit-message: "chore(deps): update to macOS ${{ steps.version.outputs.version }}"
           title: "macOS Release: ${{ steps.version.outputs.version }}"
           body-path: summary.md
           branch: feature/nudge-auto-update
           delete-branch: true
           add-paths: |
             ${{ env.NUDGE_FILE }}
+
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took,pullRequest # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
+        if: always() # Pick up events even if the job fails or is canceled.
