@@ -1,3 +1,4 @@
+---
 targets:
   - target: "default"
     update_to: "latest"
@@ -5,6 +6,13 @@ cve_urgency_levels:
   - cve_urgency_conditions:
       number_CVEs: 20
       fraction_actively_exploited_CVEs: 0.5
-    deadline_days: 2
+    deadline_days: 7
     name: "urgent"
 default_deadline_days: 14
+deadline_adjustments:
+  skip_weekends: True
+  skipped_dates:
+    - "24/12"
+    - "25/12"
+    - "01/01"
+  month_first: False

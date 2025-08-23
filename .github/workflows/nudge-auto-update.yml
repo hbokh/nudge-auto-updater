@@ -1,0 +1,114 @@
+name: Update Nudge JSON
+
+on:
+  schedule:
+    - cron: '7 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      config_file:
+        description: 'Path to nudge-auto-updater YAML configuration'
+        required: true
+        default: 'configuration.yml'
+        type: string
+      nudge_file:
+        description: 'Path to Nudge JSON to update'
+        required: true
+        default: 'com.github.macadmins.Nudge.json'
+        type: string
+      force:
+        description: 'Force re-evaluation (--force)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CONFIG_FILE: ${{ inputs.config_file || 'configuration.yml' }}
+      NUDGE_FILE: ${{ inputs.nudge_file || 'com.github.macadmins.Nudge.json' }}
+      FORCE: ${{ inputs.force || 'false' }}
+
+    steps:
+      - name: Check out nudge-auto-updater
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            configuration.yml
+            nudge-auto-updater.py
+            com.github.macadmins.Nudge.json
+            requirements.txt
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          check-latest: true
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir -r requirements.txt
+
+      - name: Prepare markdown summary
+        run: echo "" > summary.md
+
+      - name: Run nudge-auto-updater
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        id: update
+        shell: bash
+        run: |
+          set -euo pipefail
+          CMD=(python nudge-auto-updater.py --auto \
+               -n "$NUDGE_FILE" \
+               -c "$CONFIG_FILE" \
+               -m summary.md)
+          if [[ "${FORCE,,}" == "true" ]]; then
+            CMD+=("--force")
+          fi
+          echo "Running: ${CMD[*]}"
+          "${CMD[@]}" || exit 1
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- "$NUDGE_FILE"; then
+            echo "No changes detected in $NUDGE_FILE"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changes detected in $NUDGE_FILE"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract latest macOS version
+        id: version
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          VERSION=$(jq -r '.osVersionRequirements[0].requiredMinimumOSVersion' "$NUDGE_FILE")
+          echo "Latest macOS version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(deps): update ${{ env.NUDGE_FILE }} to macOS ${{ steps.version.outputs.version }}"
+          title: "macOS Release: ${{ steps.version.outputs.version }}"
+          body-path: summary.md
+          branch: feature/nudge-auto-update
+          delete-branch: true
+          add-paths: |
+            ${{ env.NUDGE_FILE }}
