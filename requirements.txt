@@ -1,2 +1,2 @@
-certifi==2025.7.14
-PyYAML==6.0.2
+certifi>=2025.8.3
+PyYAML>=6.0.2
