@@ -1,7 +1,7 @@
 ---
 targets:
   - target: "default"
-    update_to: "latest"
+    update_to: "15"
 cve_urgency_levels:
   - cve_urgency_conditions:
       number_CVEs: 20
