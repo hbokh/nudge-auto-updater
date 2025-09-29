@@ -1,14 +1,16 @@
 ---
 targets:
   - target: "default"
-    update_to: "15"
+    update_to: "latest"
+  - target: "15"
+    update_to: "15.7.1"
 cve_urgency_levels:
   - cve_urgency_conditions:
       number_CVEs: 20
       fraction_actively_exploited_CVEs: 0.5
     deadline_days: 7
     name: "urgent"
-default_deadline_days: 14
+default_deadline_days: 21
 deadline_adjustments:
   skip_weekends: True
   skipped_dates:
